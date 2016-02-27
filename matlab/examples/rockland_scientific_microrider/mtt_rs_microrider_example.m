@@ -83,13 +83,14 @@ for i=1:length(p_turb)
             clf
             figure(4)
             clf
-	    [Pxx,k,Pxx_denoise,Pxx_noise] = mtt_calc_spectrum(dTdp_seg(ind_nan),fs_k,'noise',[EL_NOISE_k',EL_NOISE']);
+            [Pxx,k,Pxx_denoise,Pxx_noise] = mtt_calc_spectrum(dTdp_seg(ind_nan),fs_k,'noise',[EL_NOISE_k',EL_NOISE']);
             % The interval in which chi is integrated
-	    k_chi   =  [0.1, 200];
-	    % The index of chi integration
-	    ind_chi =  ( k > k_chi(1) ) & ( k < k_chi(2) );	    
+            k_chi   =  [0.1, 200];
+            % The index of chi integration
+            ind_chi =  ( k > k_chi(1) ) & ( k < k_chi(2) );
             [chi(i)] = mtt_int_chi(Pxx_denoise(ind_chi),k(ind_chi));
-            mtt_fit_eps_Ruddicketal2000(k(ind_chi),Pxx(ind_chi),chi_fit,eps_fit,mtt_nanmean(T(ind_data)),4,'noise',Pxx_noise(ind_chi),'plot',4)
+            vis = mtt_get_viscosity(mtt_nanmean(T(ind_data)));
+            mtt_fit_eps_Ruddicketal2000(k(ind_chi),Pxx(ind_chi),chi_fit,eps_fit,vis,4,'noise',Pxx_noise(ind_chi),'plot',4)
             pause
         else
             disp('not enough data')

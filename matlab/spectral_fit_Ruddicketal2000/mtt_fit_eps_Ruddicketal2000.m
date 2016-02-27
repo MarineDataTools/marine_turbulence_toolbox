@@ -33,23 +33,23 @@ flag_plot = 0;
 flag_noise = 0;
 
 for i=1:length(varargin)
-    if(strcmpi(varargin{i},'NOISE'))
+    if(strcmpi(lower(varargin{i}),'noise'))
         if(verbosity)
             mtt_message('Found noise data',1)
         end
-            if((size(varargin{i+1},1) == length(k)) && (size(varargin{i+1},2) == 1))
-                if(verbosity>1)
-                    mtt_message('Noise data has the same length as k and only one dimension, taking it without interpolating',1)
-                end
-                noise = varargin{i+1}(:);
-            else
-                noise_k = varargin{i+1}(:,1);
-                noise_PSD = varargin{i+1}(:,2);
+        if((size(varargin{i+1},1) == length(k)) && (size(varargin{i+1},2) == 1))
+            if(verbosity>1)
+                mtt_message('Noise data has the same length as k and only one dimension, taking it without interpolating',1)
             end
-            
-            flag_noise = 1;
+            noise = varargin{i+1}(:);
+        else
+            noise_k = varargin{i+1}(:,1);
+            noise_PSD = varargin{i+1}(:,2);
+        end
+        
+        flag_noise = 1;
 
-    else if(strcmpi(varargin{i},'PLOT'))
+    else if(strcmpi(lower(varargin{i}),'plot'))
             flag_plot = 1;
             if((i+1) <= length(varargin))
                 if(isnumeric(varargin{i+1}))
@@ -100,6 +100,7 @@ C11(isinf(C11)) = NaN;
 eps_bestfit = eps_fit(ind_eps);
 chi_bestfit = chi_fit(ind_chi);
 P_bat_bestfit = mtt_batchelor_spectrum(k,eps_bestfit,chi_bestfit,vis,nut) + noise;
+
 C11_max = C11(ind_max);
 
 
@@ -156,6 +157,7 @@ if(flag_plot)
     legstr{end+1} = ['fit ( ' chistrf ' ' epsstrf ' )'];
     % power law fit
     pl = plot(k,P_pow_bestfit,'-g');
+    legpl(end+1) = pl;
     legstr{end+1} = ['power law fit'];
     
     for l=1:10:length(eps_bestfit)
@@ -169,6 +171,7 @@ if(flag_plot)
     end
     set(gca,'Xscale','log')
     set(gca,'Yscale','log')
+
     legend(legpl,legstr,'Location','NorthOutside','Orientation','horizontal')
     xlabel('k [cpm]')
     ylabel('PSD')
