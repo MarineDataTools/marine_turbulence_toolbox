@@ -25,7 +25,7 @@ else
 end
 
 if(verbosity == 3)
-  mtt_message(' ',1)
+  mtt_message(' ',1);
 end
 
 flag_noise = 0;
@@ -40,25 +40,11 @@ end
 
 for i=1:length(varargin)
     if(strcmpi(varargin{i},'NOISE'))
-            size(varargin{i+1})
             noise_k = varargin{i+1}(:,1);
             noise_PSD = varargin{i+1}(:,2);
             flag_noise = 1;
         if(verbosity)            
             mtt_message('Found noise data',1)
-        end
-    else if(strcmpi(varargin{i},'PLOT'))
-            flag_plot = 1;
-            if((i+1) <= length(varargin))
-                if(isnumeric(varargin{i+1}))
-                    nfig = varargin{i+1};
-                end
-            else
-                nfig = 0;
-            end
-            if(verbosity)
-                mtt_message('Plotting spectrum',1)
-            end
         end
     end
 end

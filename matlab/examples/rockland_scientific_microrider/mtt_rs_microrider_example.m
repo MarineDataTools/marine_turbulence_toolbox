@@ -19,8 +19,10 @@ if(isOctave)
 end
 
 % Loading a temperature microstructure profile
-load(['DAT_310p.mat']);
-who
+%load(['DAT_310p.mat']);
+%filename='DAT_050p.mat';
+filename='DAT_310p.mat';
+load(filename);
 
 % We need temperature, pressure and time
 disp 'Loading data'
@@ -34,7 +36,7 @@ profile.p  = uMnc.p;
 profile.time  = uMnc.time;
 profile.lon  = 15.9882;
 profile.lat  = 55.2518;
-profile.name = 'DAT_310p.mat';
+profile.name = filename;
 profile.date = datenum(2009,1,1);
 
 mtt_plot_profile(profile,'verbosity',1);
@@ -54,8 +56,10 @@ eps_fit = logspace(-12,-5,50);
 chi_fit = logspace(-12,-5,50);
 % Calculate the turbulence in depths intervals of dp, between
 % max(p_turb) and min(p_turb)
+
+plot_fit = 0;
 dp = 1.0;
-p_turb12 = 25:dp:70;
+p_turb12 = 40:dp:floor(max(profile.p));
 p_turb = p_turb12(1:end-1) + dp/2;
 for i=1:length(p_turb)
     ind_data = (p > p_turb12(i)) & (p <= p_turb12(i+1));
@@ -79,10 +83,6 @@ for i=1:length(p_turb)
         fs_k = abs(fs_t/w_seg_avg);
         ind_nan = ~isnan(dTdp_seg);
         if(sum(ind_nan) > 25)
-            figure(3)
-            clf
-            figure(4)
-            clf
             [Pxx,k,Pxx_denoise,Pxx_noise] = mtt_calc_spectrum(dTdp_seg(ind_nan),fs_k,'noise',[EL_NOISE_k',EL_NOISE']);
             % The interval in which chi is integrated
             k_chi   =  [0.1, 200];
@@ -90,8 +90,13 @@ for i=1:length(p_turb)
             ind_chi =  ( k > k_chi(1) ) & ( k < k_chi(2) );
             [chi(i)] = mtt_int_chi(Pxx_denoise(ind_chi),k(ind_chi));
             vis = mtt_get_viscosity(mtt_nanmean(T(ind_data)));
-            mtt_fit_eps_Ruddicketal2000(k(ind_chi),Pxx(ind_chi),chi_fit,eps_fit,vis,4,'noise',Pxx_noise(ind_chi),'plot',4)
-            pause
+            [ chi(i), eps(i), fit_data ] = mtt_fit_eps_Ruddicketal2000(k(ind_chi),Pxx(ind_chi),chi_fit,eps_fit,vis,4,'noise',Pxx_noise(ind_chi));
+            if(plot_fit)
+                figure(4)
+                clf
+                mtt_plot_spectral_fit_Ruddicketal2000(fit_data,'figure',4,'raw',[k,Pxx]);
+                %pause
+            end
         else
             disp('not enough data')
         end
@@ -99,4 +104,11 @@ for i=1:length(p_turb)
     end
 end
 
+%%
+
+figure(5)
+clf
+plot(chi,p_turb)
+set(gca,'xscale','log')
+axis ij
 

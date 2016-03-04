@@ -1,4 +1,4 @@
-function [chi_bestfit,eps_bestfit,LLR] = mtt_fit_eps_Ruddicketal2000(k,P,chi_fit,eps_fit,vis,d,varargin)
+function [ chi_bestfit, eps_bestfit, fit_data ] = mtt_fit_eps_Ruddicketal2000(k,P,chi_fit,eps_fit,vis,d,varargin)
 %
 % Fits the dissipation rate epsilon 
 % using the algorithm published in 
@@ -18,6 +18,10 @@ function [chi_bestfit,eps_bestfit,LLR] = mtt_fit_eps_Ruddicketal2000(k,P,chi_fit
 %       'plot',[fig]
 %
 % OUTPUT:
+%       chi_bestfit:
+%       eps_bestfit:
+%       fit_data:
+%
 %
 % Part of the marine turbulence toolbox:
 % https://github.com/MarineDataTools/marine_turbulence_toolbox      
@@ -29,8 +33,15 @@ else
     verbosity = 0;
 end
 
+for i=1:length(varargin)
+    if(strcmpi(varargin{i},'verbosity'))
+        verbosity = varargin{i + 1};
+    end
+end
+
 flag_plot = 0;
 flag_noise = 0;
+noise = k*NaN;
 
 for i=1:length(varargin)
     if(strcmpi(lower(varargin{i}),'noise'))
@@ -42,26 +53,17 @@ for i=1:length(varargin)
                 mtt_message('Noise data has the same length as k and only one dimension, taking it without interpolating',1)
             end
             noise = varargin{i+1}(:);
+        elseif((size(varargin{i+1},2) == length(k)) && (size(varargin{i+1},1) == 1))
+            if(verbosity>1)
+                mtt_message('Noise data has the same length as k and only one dimension, taking it without interpolating',1)
+            end
+            noise = varargin{i+1}(:)';
         else
             noise_k = varargin{i+1}(:,1);
             noise_PSD = varargin{i+1}(:,2);
         end
         
         flag_noise = 1;
-
-    else if(strcmpi(lower(varargin{i}),'plot'))
-            flag_plot = 1;
-            if((i+1) <= length(varargin))
-                if(isnumeric(varargin{i+1}))
-                    nfig = varargin{i+1};
-                end
-            else
-                nfig = 0;
-            end
-            if(verbosity)
-                mtt_message('Plotting spectrum',1)
-            end
-        end
     end
 end
 
@@ -99,6 +101,7 @@ C11(isinf(C11)) = NaN;
 [ind_eps,ind_chi] = ind2sub(size(C11),ind_max);
 eps_bestfit = eps_fit(ind_eps);
 chi_bestfit = chi_fit(ind_chi);
+kb_bestfit = ((eps_bestfit/vis/vis/nut).^0.25)/(2*pi); % Batchelor wavenumber
 P_bat_bestfit = mtt_batchelor_spectrum(k,eps_bestfit,chi_bestfit,vis,nut) + noise;
 
 C11_max = C11(ind_max);
@@ -108,7 +111,7 @@ C11_max = C11(ind_max);
 b = -1:0.05:10;
 for l=1:length(b)
     P_pow = k.^(-b(l)) + noise; % The spectrum
-    A = (mtt_nansum(P) * dk) / (mtt_nansum(P_pow) * dk);
+    A = (mtt_nansum(P) * dk) / (mtt_nansum(P_pow) * dk); % normalize
     P_pow = A * P_pow;
     pdffac1 = ( d * P ) ./ ( P_pow );
     C11i_pow = d./(P_pow) .* chi2pdf(pdffac1 , d);
@@ -127,71 +130,20 @@ LLR = log10(exp(C11_max-C11_pow_max));
 
 
 
-% ------------------------ Plot the data ----------------------------------
-if(flag_plot)
-    legpl = [];
-    legstr = {};
-    if(nfig)
-        figure(nfig)
-    else
-        figure
-    end
-    
-    % Plot the spectrum
-    subplot(3,3,[1 2 3 4 5 6])
-    hold all
-    % original spectrum
-    pl = plot(k,P,'-k');
-    legpl(end+1) = pl;
-    chilog = floor(log10(chi_bestfit));
-    chistr = sprintf('%.2f',(chi_bestfit/10^chilog));
-    epslog = floor(log10(eps_bestfit));
-    epsstr = sprintf('%.2f',(eps_bestfit/10^epslog));
-    chistrf = ['\chi = ' chistr 'x10^{' num2str(chilog) '}'];
-    epsstrf = ['\epsilon =' epsstr 'x10^{' num2str(epslog) '}'];
-    legstr{end+1} = ['int. data \chi' ];
-    
-    % batchelor fit
-    pl = plot(k,P_bat_bestfit,'-r');
-    legpl(end+1) = pl;
-    legstr{end+1} = ['fit ( ' chistrf ' ' epsstrf ' )'];
-    % power law fit
-    pl = plot(k,P_pow_bestfit,'-g');
-    legpl(end+1) = pl;
-    legstr{end+1} = ['power law fit'];
-    
-    for l=1:10:length(eps_bestfit)
-        plot(k,P_th(:,l),'-','Color',[.5, .5, .5])
-    end
-    
-    if(flag_noise)
-        pl = plot(k,noise);
-        legpl(end+1) = pl;
-        legstr{end+1} = 'noise';
-    end
-    set(gca,'Xscale','log')
-    set(gca,'Yscale','log')
+fit_data.k = k;
+fit_data.P = P;
+fit_data.kb = kb_bestfit;
+fit_data.LLR = LLR;
+fit_data.P_bat_bestfit = P_bat_bestfit;
+fit_data.P_pow_bestfit = P_pow_bestfit;
+fit_data.noise = noise;
+fit_data.eps_bestfit = eps_bestfit;
+fit_data.chi_bestfit = chi_bestfit;
+fit_data.eps_fit = eps_fit;
+fit_data.chi_fit = chi_fit;
+fit_data.C11 = C11;
 
-    legend(legpl,legstr,'Location','NorthOutside','Orientation','horizontal')
-    xlabel('k [cpm]')
-    ylabel('PSD')
-    xlim([floor(min(k)),ceil(max(k))])
-    
-    % plot the likelohood matrix
-    subplot(3,3,7)
-    hold all
-    pcolor(log10(eps_fit),log10(chi_fit),C11')
-    xlabel('log10 \epsilon')
-    ylabel('log10 \chi')
-    colorbar
-    plot(log10(eps_fit(ind_eps)),log10(chi_fit(ind_chi)),'ok')
-    xlim([min(log10(eps_fit(:))),max(log10(eps_fit(:)))])
-    ylim([min(log10(chi_fit(:))),max(log10(chi_fit(:)))])
-    % 
-    subplot(3,3,8)
-    set(gca,'visible','off')
-    text(.1,.5,['LLR:' num2str(LLR)])
-end
+
     
 
 

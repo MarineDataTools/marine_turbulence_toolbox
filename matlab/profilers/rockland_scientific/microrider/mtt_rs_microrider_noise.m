@@ -14,7 +14,7 @@ function noise = tt_rockland_microrider_noise(k)
 % part of the turbulence toolbox
     
     EL_NOISE_k  =  logspace(0,5.2);
-    EL_NOISE    =  logspace(log10(2e-9),-2.69);  
+    EL_NOISE    =  logspace(log10(2e-9),-2.69);
     
     noise = interp1(log10(EL_NOISE_k),log10(EL_NOISE),log10(k));
     noise = 10.^noise;
