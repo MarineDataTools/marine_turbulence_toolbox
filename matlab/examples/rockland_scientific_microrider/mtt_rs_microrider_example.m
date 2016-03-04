@@ -57,7 +57,7 @@ chi_fit = logspace(-12,-5,50);
 % Calculate the turbulence in depths intervals of dp, between
 % max(p_turb) and min(p_turb)
 
-plot_fit = 0;
+plot_fit = 1;
 dp = 1.0;
 p_turb12 = 40:dp:floor(max(profile.p));
 p_turb = p_turb12(1:end-1) + dp/2;
@@ -108,7 +108,25 @@ end
 
 figure(5)
 clf
+subplot(1,3,1)
+hold all
+plot(profile.T1,profile.p)
+plot(profile.T2,profile.p)
+axis ij
+box on
+legend('FP07#1','FP07#2')
+xlabel('Temperature [degC]')
+ylabel('Pressure [dbar]')
+
+subplot(1,3,2)
+plot(eps,p_turb)
+set(gca,'xscale','log')
+axis ij
+xlabel('\epsilon [W kg^{-1}]')
+
+subplot(1,3,3)
 plot(chi,p_turb)
 set(gca,'xscale','log')
 axis ij
+xlabel('\chi [K^2 s^{-1}]]')
 

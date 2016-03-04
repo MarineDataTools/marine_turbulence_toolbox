@@ -15,12 +15,23 @@ function [ chi_bestfit, eps_bestfit, fit_data ] = mtt_fit_eps_Ruddicketal2000(k,
 %       d: Degree of freedom of power spectrum
 % optional
 %       'noise',noise:
-%       'plot',[fig]
 %
 % OUTPUT:
-%       chi_bestfit:
-%       eps_bestfit:
-%       fit_data:
+%       chi_bestfit: Temperature variance decay estimate [W kg^{-1}]
+%       eps_bestfit: Dissipation rate estimate [K^2 s^{-1}]
+%       fit_data: structure containing fit parameters
+%           fit_data.k: wavenumber [cycles per meter]
+%           fit_data.P: Power spectrum [K^2 m^{-1}]
+%           fit_data.kb: Batchelor wavenumber
+%           fit_data.LLR: Log likelihood ratio
+%           fit_data.P_bat_bestfit: Batchelor spectrum of the best fit
+%           fit_data.P_pow_bestfit: Power spectrum of the best fit
+%           fit_data.noise: noise spectrum
+%           fit_data.eps_bestfit: Dissipation rate of the best fit
+%           fit_data.chi_bestfit: Temperature variance decay rate of the best fit
+%           fit_data.eps_fit: Dissipation rates fitted against
+%           fit_data.chi_fit: Temperature variance decay rates fitted against
+%           fit_data.C11: maximum likelihood estimation
 %
 %
 % Part of the marine turbulence toolbox:
@@ -39,7 +50,6 @@ for i=1:length(varargin)
     end
 end
 
-flag_plot = 0;
 flag_noise = 0;
 noise = k*NaN;
 
