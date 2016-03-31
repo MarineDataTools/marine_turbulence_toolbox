@@ -52,8 +52,17 @@ end
 
 flag_noise = 0;
 noise = k*NaN;
+FLAG_USE_CHI2PDF_LOOKUP = 0;
 
 for i=1:length(varargin)
+    if(strcmpi(lower(varargin{i}),'chi2pdf'))
+        if(verbosity)
+            mtt_message('Using chi2pdf lookup table',1)
+        end
+        chi2pdf_lookup = varargin{i+1};
+        FLAG_USE_CHI2PDF_LOOKUP = 1;
+    end
+            
     if(strcmpi(lower(varargin{i}),'noise'))
         if(verbosity)
             mtt_message('Found noise data',1)
@@ -88,6 +97,7 @@ kb_bat = ((eps_fit/vis/vis/nut).^0.25)/(2*pi); % Batchelor wavenumber
 P_fit_bat = zeros(length(k),length(eps_fit),length(chi_fit)); % preallocate array for the batchelor spectra
 P_th = zeros(size(P_fit_bat)); % preallocate array for the theoretical spectra (Batchelor plus noise)
 C11 = zeros(length(eps_fit),length(chi_fit)); % preallocate array for the likelihood fit
+
 for l=1:length(eps_fit)
     for m=1:length(chi_fit)
         P_fit_bat(:,l,m) = mtt_batchelor_spectrum(k,eps_fit(l),chi_fit(m),vis,nut);
@@ -97,7 +107,12 @@ for l=1:length(eps_fit)
             P_th(:,l,m) = P_fit_bat(:,l,m);
         end
         pdffac1 = ( d * P ) ./ ( P_th(:,l,m) );
-        C11i = d./(P_th(:,l,m)) .* chi2pdf(pdffac1 , d);
+        if(FLAG_USE_CHI2PDF_LOOKUP)
+            cpdf = mtt_chi2pdf_lookup(pdffac1,chi2pdf_lookup);
+        else
+            cpdf = chi2pdf(pdffac1 , d);
+        end
+        C11i = d./(P_th(:,l,m)) .* cpdf;
         logC11i = log(C11i);
         logC11i(isinf(logC11i)) = NaN;
         C11(l,m)  = mtt_nansum(logC11i);
@@ -108,13 +123,21 @@ C11(isinf(C11)) = NaN;
 
 % Find the maximum likelihood
 [~,ind_max] = mtt_nanmax(exp(C11(:)/mtt_nanmax(C11(:))));
-[ind_eps,ind_chi] = ind2sub(size(C11),ind_max);
-eps_bestfit = eps_fit(ind_eps);
-chi_bestfit = chi_fit(ind_chi);
+
+if(~isempty(ind_max))
+    [ind_eps,ind_chi] = ind2sub(size(C11),ind_max);
+    eps_bestfit = eps_fit(ind_eps);
+    chi_bestfit = chi_fit(ind_chi);
+    C11_max = C11(ind_max);
+else
+    eps_bestfit = NaN;
+    chi_bestfit = NaN;
+    C11_max = NaN;
+end
 kb_bestfit = ((eps_bestfit/vis/vis/nut).^0.25)/(2*pi); % Batchelor wavenumber
 P_bat_bestfit = mtt_batchelor_spectrum(k,eps_bestfit,chi_bestfit,vis,nut) + noise;
 
-C11_max = C11(ind_max);
+
 
 
 % Fit a line in log-log space of the form S1_th = Ak^(-b) + S1_n
@@ -124,7 +147,13 @@ for l=1:length(b)
     A = (mtt_nansum(P) * dk) / (mtt_nansum(P_pow) * dk); % normalize
     P_pow = A * P_pow;
     pdffac1 = ( d * P ) ./ ( P_pow );
-    C11i_pow = d./(P_pow) .* chi2pdf(pdffac1 , d);
+    if(FLAG_USE_CHI2PDF_LOOKUP)
+        size(pdffac1)
+        cpdf = mtt_chi2pdf_lookup(pdffac1,chi2pdf_lookup);
+    else
+        cpdf = chi2pdf(pdffac1 , d);
+    end
+    C11i_pow = d./(P_pow) .* cpdf;
     logC11i_pow = log(C11i_pow);
     logC11i_pow(isinf(logC11i_pow)) = NaN;
     C11_pow(l)  = mtt_nansum(logC11i_pow);
@@ -154,7 +183,7 @@ fit_data.chi_fit = chi_fit;
 fit_data.C11 = C11;
 
 
-    
-
+%histogram(pdfall)
+%pause
 
 return
