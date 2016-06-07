@@ -143,9 +143,11 @@ P_bat_bestfit = mtt_batchelor_spectrum(k,eps_bestfit,chi_bestfit,vis,nut) + nois
 % Fit a line in log-log space of the form S1_th = Ak^(-b) + S1_n
 b = -1:0.05:10;
 for l=1:length(b)
-    P_pow = k.^(-b(l)) + noise; % The spectrum
-    A = (mtt_nansum(P) * dk) / (mtt_nansum(P_pow) * dk); % normalize
-    P_pow = A * P_pow;
+    %P_pow = k.^(-b(l)) + noise; % The spectrum
+    %A = (mtt_nansum(P) * dk) / (mtt_nansum(P_pow) * dk); % normalize
+    P_pow = k.^(-b(l)); % The spectrum
+    A = (mtt_nansum(P-noise) * dk) / (mtt_nansum(P_pow) * dk); % normalize
+    P_pow = A * P_pow + noise;
     pdffac1 = ( d * P ) ./ ( P_pow );
     if(FLAG_USE_CHI2PDF_LOOKUP)
         size(pdffac1)
