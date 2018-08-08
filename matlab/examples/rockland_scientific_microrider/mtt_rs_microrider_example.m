@@ -39,7 +39,7 @@ profile.lat  = 55.2518;
 profile.name = filename;
 profile.date = datenum(2009,1,1);
 
-mtt_plot_profile(profile,'verbosity',1);
+%mtt_plot_profile(profile,'verbosity',1);
 disp 'Finished'
 
 disp 'Calculating velocity'
@@ -52,8 +52,8 @@ disp 'Calculate temperature gradient'
 EL_NOISE_k  =  logspace(0,5.2);
 EL_NOISE    =  logspace(log10(2e-9),-2.69);
 
-eps_fit = logspace(-12,-5,50);
-chi_fit = logspace(-12,-5,50);
+eps_fit = logspace(-14,-5,100);
+chi_fit = logspace(-14,-5,100);
 % Calculate the turbulence in depths intervals of dp, between
 % max(p_turb) and min(p_turb)
 
