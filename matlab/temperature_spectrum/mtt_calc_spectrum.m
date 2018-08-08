@@ -38,6 +38,14 @@ for i=1:length(varargin)
   end
 end
 
+% Read in local verbosity
+flag_hanning = 0;
+for i=1:length(varargin)
+  if(strcmpi(varargin{i},'hanning'))
+    flag_hanning = 1;
+  end
+end
+
 for i=1:length(varargin)
     if(strcmpi(varargin{i},'NOISE'))
             noise_k = varargin{i+1}(:,1);
@@ -51,7 +59,29 @@ end
 
 
 NFFT = length(x);
-[Pxx,k] = periodogram(x-mtt_nanmean(x),hanning(length(x)),NFFT,fs);
+if(flag_hanning)
+    NFFT = floor(length(x));
+    [Pxx,k] = periodogram(x-mtt_nanmean(x),hanning(length(x)),NFFT,fs);
+    Xd = detrend(x,'linear');
+    %figure(100)
+    %hold all
+    %plot(x)
+    %plot(Xd)
+    %pause
+    %[Pxx, k] = pwelch(x-mtt_nanmean(x), [], [], [], fs); % Raw Power Spectrum
+    %[Pxx, k] = pwelch(Xd, [], [], [], fs); % Raw Power Spectrum
+    dk = k(2) - k(1);
+    %Pxx = Pxx / sum(Pxx*dk) * var(x);    
+    var1 = var(x);
+    var2 = sum(Pxx*dk);
+    var3 = 1/length(x) * sum((x - mean(x)).^2);
+
+    disp([' calc spectrum var1: ' num2str(var1) ' var2: ' num2str(var2) ' var3: ' num2str(var3)])
+    %[Pxx, k] = pwelch(x, [], [], [], fs); % Raw Power Spectrum
+    Pxx = Pxx / sum(Pxx*dk) * var(x);
+else
+    %[Pxx,k] = periodogram(x-mtt_nanmean(x),[],NFFT,fs);
+end
 
 
 if(flag_noise)

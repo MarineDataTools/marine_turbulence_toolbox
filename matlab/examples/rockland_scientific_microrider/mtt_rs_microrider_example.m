@@ -61,18 +61,23 @@ plot_fit = 1;
 dp = 1.0;
 p_turb12 = 40:dp:floor(max(profile.p));
 p_turb = p_turb12(1:end-1) + dp/2;
+ik = 0;
 for i=1:length(p_turb)
     ind_data = (p > p_turb12(i)) & (p <= p_turb12(i+1));
     if(sum(ind_data) > 100)
         disp(['Data in ' num2str(p_turb(i))])
-        figure(2)
-        clf
-        subplot(1,2,1)
-        plot(T(ind_data),p(ind_data))
-        axis ij
-        subplot(1,2,2)
-        plot(w(ind_data),p(ind_data))
-        axis ij
+        if(plot_fit)
+            figure(2)
+            clf
+            subplot(2,2,[1 2])
+            plot(T,p)
+            subplot(2,2,3)
+            plot(T(ind_data),p(ind_data))
+            axis ij
+            subplot(2,2,4)
+            plot(w(ind_data),p(ind_data))
+            axis ij
+        end
         
         t_seg = t(ind_data);
         T_seg = T(ind_data);  
@@ -83,7 +88,9 @@ for i=1:length(p_turb)
         fs_k = abs(fs_t/w_seg_avg);
         ind_nan = ~isnan(dTdp_seg);
         if(sum(ind_nan) > 25)
-            [Pxx,k,Pxx_denoise,Pxx_noise] = mtt_calc_spectrum(dTdp_seg(ind_nan),fs_k,'noise',[EL_NOISE_k',EL_NOISE']);
+            ik = ik + 1;
+            [Pxx,k,Pxx_denoise,Pxx_noise] = mtt_calc_spectrum(dTdp_seg(ind_nan),fs_k,'noise',[EL_NOISE_k',EL_NOISE'],'hanning');
+            [Pxx2,k2,Pxx_denoise2,Pxx_noise2] = mtt_calc_spectrum(dTdp_seg(ind_nan),fs_k,'noise',[EL_NOISE_k',EL_NOISE'],'hanning');
             % The interval in which chi is integrated
             k_chi   =  [0.1, 200];
             % The index of chi integration
@@ -91,18 +98,37 @@ for i=1:length(p_turb)
             [chi(i)] = mtt_int_chi(Pxx_denoise(ind_chi),k(ind_chi));
             vis = mtt_get_viscosity(mtt_nanmean(T(ind_data)));
             [ chi(i), eps(i), fit_data ] = mtt_fit_eps_Ruddicketal2000(k(ind_chi),Pxx(ind_chi),chi_fit,eps_fit,vis,4,'noise',Pxx_noise(ind_chi));
+            % 2 The index of chi integration
+            ind_chi2 =  ( k2 > k_chi(1) ) & ( k2 < k_chi(2) );
+            [chi2(i)] = mtt_int_chi(Pxx_denoise(ind_chi2),k2(ind_chi2));
+            [ chi2(i), eps2(i), fit_data2 ] = mtt_fit_eps_Ruddicketal2000(k2(ind_chi2),Pxx2(ind_chi2),chi_fit,eps_fit,vis,4,'noise',Pxx_noise2(ind_chi2));
             if(plot_fit)
                 figure(4)
                 clf
                 mtt_plot_spectral_fit_Ruddicketal2000(fit_data,'figure',4,'raw',[k,Pxx]);
-                %pause
+                figure(5)
+                clf
+                mtt_plot_spectral_fit_Ruddicketal2000(fit_data2,'figure',5,'raw',[k2,Pxx2]);
+                pause
             end
+            DATA(ik).w = w_seg;
+            DATA(ik).t = t_seg;
+            DATA(ik).T = T_seg;
+            DATA(ik).p = p(ind_data);
+            DATA(ik).dTdp = dTdp_seg;
+            DATA(ik).ind_nan = ind_nan;
+            DATA(ik).k = k;
+            DATA(ik).Pxx = Pxx;
         else
             disp('not enough data')
         end
         
     end
 end
+
+%% Saving the fitted data
+
+save('mtt_data_rs_microrider_example.mat','DATA')
 
 %%
 
@@ -119,13 +145,17 @@ xlabel('Temperature [degC]')
 ylabel('Pressure [dbar]')
 
 subplot(1,3,2)
+hold all
 plot(eps,p_turb)
+plot(eps2,p_turb)
 set(gca,'xscale','log')
 axis ij
 xlabel('\epsilon [W kg^{-1}]')
 
 subplot(1,3,3)
+hold all
 plot(chi,p_turb)
+plot(chi2,p_turb)
 set(gca,'xscale','log')
 axis ij
 xlabel('\chi [K^2 s^{-1}]]')

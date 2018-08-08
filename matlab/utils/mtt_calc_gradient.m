@@ -34,8 +34,9 @@ function [dxdy] = mtt_calc_gradient(x,y,varargin)
   dxdy       = NaN(length(x),1);
   ynew       = NaN(length(x),1);
 
-  for i=2:length(x)-1
-    dxdy(i,1) = (x(i+1) - x(i-1))/(y(i+1) - y(i-1));
+  n = 1;
+  for i=n+1:length(x)-n
+    dxdy(i,1) = (x(i+n) - x(i-n))/(y(i+n) - y(i-n));
   end
 
 end

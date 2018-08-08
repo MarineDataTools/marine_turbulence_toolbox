@@ -51,7 +51,7 @@ for i=1:length(varargin)
 end
 
 flag_noise = 0;
-noise = k*NaN;
+noise = k*0;
 
 for i=1:length(varargin)
     if(strcmpi(lower(varargin{i}),'noise'))
